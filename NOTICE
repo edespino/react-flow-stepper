@@ -1,0 +1,10 @@
+react-flow-stepper
+Copyright 2026 react-flow-stepper contributors
+
+This project includes an example flow ("How Ralph Works with Amp") based on
+the workflow presented by Ryan Carson on Greg Isenberg's podcast:
+"Ralph Wiggum" AI Agent will 10x Claude Code/Amp
+https://www.youtube.com/watch?v=RpvQH0r0ecM
+
+The flow diagram was reproduced from screenshots of the video using
+Claude Code (https://claude.ai/code) by Anthropic.

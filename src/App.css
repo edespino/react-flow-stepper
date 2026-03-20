@@ -1,0 +1,4 @@
+/* Override React Flow animated edge stroke colors */
+.animated-edge-gray .react-flow__edge-path {
+  stroke: #999 !important;
+}
