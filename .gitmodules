@@ -1,0 +1,3 @@
+[submodule "src/flows"]
+	path = src/flows
+	url = git@github.com:edespino/react-flow-stepper-flows.git

@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useRef } from 'react'
+import { useState, useCallback, useEffect, useRef, useMemo } from 'react'
 import {
   ReactFlow,
   Background,
@@ -17,132 +17,15 @@ import CodeSnippetNode from './nodes/CodeSnippetNode'
 import DecisionNode from './nodes/DecisionNode'
 import DoneNode from './nodes/DoneNode'
 import AnnotationNode from './nodes/AnnotationNode'
+
+import { flowRegistry } from '@flows'
+
 const nodeTypes = {
   step: StepNode,
   codeSnippet: CodeSnippetNode,
   decision: DecisionNode,
   done: DoneNode,
   annotation: AnnotationNode,
-}
-
-const TOTAL_STEPS = 10
-
-// Each node/edge has a `revealAt` step number (1-10)
-const allNodes = [
-  {
-    id: 'title',
-    type: 'annotation',
-    position: { x: 250, y: -60 },
-    data: { text: 'How Ralph Works with Amp', subtitle: 'Autonomous AI agent loop for completing PRDs', isTitle: true },
-    selectable: false,
-    revealAt: 1,
-  },
-  // Left column: steps 1-4 going down
-  {
-    id: '1',
-    type: 'step',
-    position: { x: 0, y: 50 },
-    data: { title: 'You write a PRD', subtitle: 'Define what you want to build', variant: 'orange' },
-    revealAt: 1,
-  },
-  {
-    id: '2',
-    type: 'step',
-    position: { x: 20, y: 180 },
-    data: { title: 'Convert to prd.json', subtitle: 'Break into small user stories', variant: 'orange' },
-    revealAt: 2,
-  },
-  {
-    id: 'code',
-    type: 'codeSnippet',
-    position: { x: 300, y: 60 },
-    data: {
-      code: `{
-  "id": "US-003",
-  "title": "Add priority field to database",
-  "acceptanceCriteria": [
-    "Add priority column to tasks table",
-    "Generate and run migration",
-    "Typecheck passes"
-  ],
-  "passes": false
-}`,
-    },
-    revealAt: 3,
-  },
-  {
-    id: '3',
-    type: 'step',
-    position: { x: 20, y: 310 },
-    data: { title: 'Run ralph.sh', subtitle: 'Starts the autonomous loop', variant: 'orange' },
-    revealAt: 3,
-  },
-  {
-    id: '4',
-    type: 'step',
-    position: { x: 0, y: 450 },
-    data: { title: 'Amp picks a story', subtitle: 'Finds next passes: false', variant: 'orange' },
-    revealAt: 4,
-  },
-  // Right path: 5 → 6 going right, then 7 down, then 8 back left
-  {
-    id: '5',
-    type: 'step',
-    position: { x: 340, y: 340 },
-    data: { title: 'Implements it', subtitle: 'Writes code, runs tests', variant: 'gray' },
-    revealAt: 5,
-  },
-  {
-    id: '6',
-    type: 'step',
-    position: { x: 600, y: 440 },
-    data: { title: 'Commits changes', subtitle: 'If tests pass', variant: 'gray' },
-    revealAt: 6,
-  },
-  {
-    id: '7',
-    type: 'step',
-    position: { x: 600, y: 570 },
-    data: { title: 'Updates prd.json', subtitle: 'Sets passes: true', variant: 'gray' },
-    revealAt: 7,
-  },
-  {
-    id: '8',
-    type: 'step',
-    position: { x: 340, y: 660 },
-    data: { title: 'Logs to progress.txt', subtitle: 'Saves learnings', variant: 'gray' },
-    revealAt: 8,
-  },
-  {
-    id: 'agents-note',
-    type: 'annotation',
-    position: { x: 580, y: 670 },
-    data: { text: 'Also updates AGENTS.md with patterns discovered, so future iterations learn from this one.', isNote: true },
-    revealAt: 8,
-  },
-  // Bottom: decision + done
-  {
-    id: '9',
-    type: 'decision',
-    position: { x: 30, y: 670 },
-    data: { title: 'More stories?' },
-    revealAt: 9,
-  },
-  {
-    id: '10',
-    type: 'done',
-    position: { x: 350, y: 870 },
-    data: { title: 'Done!', subtitle: 'All stories complete' },
-    revealAt: 10,
-  },
-]
-
-const edgeDefaults = {
-  type: 'default',
-  animated: true,
-  style: { stroke: '#999', strokeWidth: 1.5, strokeDasharray: '6 4' },
-  markerEnd: { type: MarkerType.ArrowClosed, color: '#999', width: 10, height: 10 },
-  className: 'animated-edge-gray',
 }
 
 const dashed = {
@@ -153,34 +36,17 @@ const dashed = {
   className: 'animated-edge-gray',
 }
 
-const allEdges = [
-  // Vertical: bottom -> top
-  { id: 'e1-2', source: '1', target: '2', ...edgeDefaults, sourceHandle: 'bottom', targetHandle: 'top-in', revealAt: 2 },
-  { id: 'e2-3', source: '2', target: '3', ...edgeDefaults, sourceHandle: 'bottom', targetHandle: 'top-in', revealAt: 3 },
-  { id: 'e3-4', source: '3', target: '4', ...edgeDefaults, sourceHandle: 'bottom', targetHandle: 'top-in', revealAt: 4 },
-  // Horizontal right: right -> left
-  { id: 'e4-5', source: '4', target: '5', ...dashed, sourceHandle: 'right', targetHandle: 'left-in', revealAt: 5 },
-  { id: 'e5-6', source: '5', target: '6', ...dashed, sourceHandle: 'right', targetHandle: 'left-in', revealAt: 6 },
-  // Vertical down
-  { id: 'e6-7', source: '6', target: '7', ...dashed, sourceHandle: 'bottom', targetHandle: 'top-in', revealAt: 7 },
-  // Horizontal left (going back)
-  { id: 'e7-8', source: '7', target: '8', ...dashed, sourceHandle: 'left', targetHandle: 'right-in', revealAt: 8 },
-  { id: 'e8-9', source: '8', target: '9', ...dashed, sourceHandle: 'left', targetHandle: 'right-in', revealAt: 9 },
-  // Loop back: top -> left
-  { id: 'e9-4', source: '9', target: '4', ...dashed, sourceHandle: 'top', targetHandle: 'bottom-in', label: 'Yes', labelStyle: { fontSize: 12, fontWeight: 500, fill: '#555' }, labelBgStyle: { fill: '#fff', fillOpacity: 0.9 }, labelBgPadding: [4, 8], labelBgBorderRadius: 4, revealAt: 9 },
-  // Down to Done
-  { id: 'e9-10', source: '9', target: '10', ...dashed, sourceHandle: 'bottom', targetHandle: 'top-in', label: 'No', labelStyle: { fontSize: 12, fontWeight: 500, fill: '#555' }, labelBgStyle: { fill: '#fff', fillOpacity: 0.9 }, labelBgPadding: [4, 8], labelBgBorderRadius: 4, revealAt: 10 },
-]
+function FlowInner({ flowId }) {
+  const flowData = flowRegistry[flowId]
+  const TOTAL_STEPS = flowData.TOTAL_STEPS
+  const allNodes = flowData.allNodes
+  const allEdges = flowData.allEdges
 
-function FlowInner() {
   const [currentStep, setCurrentStep] = useState(1)
-  const { fitView, setCenter } = useReactFlow()
+  const { fitView, getZoom, setCenter } = useReactFlow()
 
-  // Track user-created edges
   const userEdgesRef = useRef([])
-  // Track reconnected edges (id -> modified edge object)
   const modifiedEdgesRef = useRef(new Map())
-  // Track dragged node positions (id -> {x, y})
   const movedNodePositionsRef = useRef(new Map())
 
   const getInitialNodes = (step) =>
@@ -193,17 +59,14 @@ function FlowInner() {
   const [edges, setEdges, onEdgesChange] = useEdgesState(getInitialEdges(1))
 
   useEffect(() => {
-    // For nodes: use saved positions for moved nodes, keep existing for others
     setNodes((currentNodes) => {
       const currentNodeMap = new Map(currentNodes.map((n) => [n.id, n]))
       const targetNodes = getInitialNodes(currentStep)
 
       return targetNodes.map((n) => {
-        // If user dragged this node, use saved position
         if (movedNodePositionsRef.current.has(n.id)) {
           return { ...n, position: movedNodePositionsRef.current.get(n.id) }
         }
-        // If node already exists in current state, keep it
         if (currentNodeMap.has(n.id)) {
           return currentNodeMap.get(n.id)
         }
@@ -211,13 +74,10 @@ function FlowInner() {
       })
     })
 
-    // For edges: keep existing ones (preserving reconnections), add new ones
     setEdges((currentEdges) => {
       const currentEdgeMap = new Map(currentEdges.map((e) => [e.id, e]))
       const targetInitialEdges = getInitialEdges(currentStep)
-      const targetIds = new Set(targetInitialEdges.map((e) => e.id))
 
-      // Build result: for each initial edge at this step, use modified or existing version
       const result = targetInitialEdges.map((e) => {
         if (modifiedEdgesRef.current.has(e.id)) {
           return modifiedEdgesRef.current.get(e.id)
@@ -228,7 +88,6 @@ function FlowInner() {
         return e
       })
 
-      // Add user-created edges
       for (const ue of userEdgesRef.current) {
         if (!result.find((e) => e.id === ue.id)) {
           result.push(ue)
@@ -239,14 +98,29 @@ function FlowInner() {
     })
 
     setTimeout(() => {
-      // Use fitView to show all visible nodes, keeping title and newest node in frame
-      fitView({ padding: 0.15, duration: 400, maxZoom: 1 })
+      if (currentStep === 1) {
+        fitView({ padding: 0.3, duration: 400, maxZoom: 1 })
+      } else {
+        // Find the newest primary node (step/decision/done) at this step
+        const revealedNodes = allNodes.filter((n) => n.revealAt === currentStep)
+        const primary = revealedNodes.find((n) => ['step', 'decision', 'done'].includes(n.type)) || revealedNodes[0]
+        if (primary) {
+          const pos = movedNodePositionsRef.current.get(primary.id) || primary.position
+          // Use title X for horizontal center, newest node Y for vertical
+          const titleNode = allNodes.find((n) => n.id === 'title')
+          const titlePos = movedNodePositionsRef.current.get('title') || titleNode?.position || { x: 0, y: -60 }
+          const centerX = titlePos.x + 120
+          const centerY = pos.y + 40
+          const zoom = getZoom()
+          setCenter(centerX, centerY, { zoom, duration: 400 })
+        }
+      }
     }, 50)
-  }, [currentStep, setNodes, setEdges, fitView])
+  }, [currentStep, setNodes, setEdges, fitView, getZoom, setCenter])
 
   const handleNext = useCallback(() => {
     setCurrentStep((s) => Math.min(s + 1, TOTAL_STEPS))
-  }, [])
+  }, [TOTAL_STEPS])
 
   const handlePrevious = useCallback(() => {
     setCurrentStep((s) => Math.max(s - 1, 1))
@@ -257,7 +131,6 @@ function FlowInner() {
     modifiedEdgesRef.current = new Map()
     movedNodePositionsRef.current = new Map()
     setCurrentStep(0)
-    // Force re-render back to step 1
     setTimeout(() => setCurrentStep(1), 0)
   }, [])
 
@@ -283,7 +156,6 @@ function FlowInner() {
   const onReconnect = useCallback(
     (oldEdge, newConnection) => {
       setEdges((els) => {
-        // Manually update the edge, preserving its id and style
         const updatedEdge = {
           ...oldEdge,
           source: newConnection.source,
@@ -320,7 +192,6 @@ function FlowInner() {
         </ReactFlow>
       </div>
 
-      {/* Navigation bar — outside ReactFlow, in its own space */}
       <div
         style={{
           display: 'flex',
@@ -328,7 +199,7 @@ function FlowInner() {
           alignItems: 'center',
           gap: 4,
           padding: '10px 0 8px',
-                    background: '#fafaf8',
+          background: '#fafaf8',
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
@@ -395,10 +266,10 @@ function FlowInner() {
   )
 }
 
-export default function Flow() {
+export default function Flow({ flowId }) {
   return (
     <ReactFlowProvider>
-      <FlowInner />
+      <FlowInner flowId={flowId} />
     </ReactFlowProvider>
   )
 }

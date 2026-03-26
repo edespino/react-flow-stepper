@@ -6,8 +6,14 @@ Interactive step-by-step flowchart using React Flow with progressive reveal.
 
 ```
 src/
-  App.jsx          — Root component, mounts the Flow
-  Flow.jsx         — Main flow: node/edge data, step logic, persistence, navigation
+  App.jsx          — Root component, project/flow picker, imports PROJECTS from @flows
+  Flow.jsx         — Flow engine: step logic, persistence, navigation, imports flowRegistry from @flows
+  flows/           — Git submodule (private repo: edespino/react-flow-stepper-flows)
+    index.js       — Exports flowRegistry + PROJECTS
+    *.jsx          — Flow data files (nodes, edges, revealAt)
+  flows-sample/    — Public fallback when submodule is not initialized
+    index.js       — Exports sample flowRegistry + PROJECTS
+    sample.jsx     — Demo flow
   nodes/
     HandleSet.jsx  — Shared handle component (4 visible source + 4 invisible target handles)
     StepNode.jsx   — Workflow step (orange or gray variant)
@@ -17,6 +23,21 @@ src/
     AnnotationNode.jsx  — Title or note (no handles)
   App.css          — Edge animation color overrides
   index.css        — Global reset + full-height html/body/#root
+vite.config.js     — @flows alias: src/flows if present, else src/flows-sample
+```
+
+## Private flows submodule
+
+Flow data is stored in a private git submodule at `src/flows/`.
+
+```bash
+# Clone with submodule (requires access to private repo)
+git clone --recurse-submodules <this-repo>
+
+# Or initialize after clone
+git submodule update --init src/flows
+
+# Without submodule access, the app falls back to src/flows-sample/
 ```
 
 ## Creating a new flow
