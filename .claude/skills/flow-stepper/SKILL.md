@@ -54,7 +54,7 @@ Break the architecture into 6–14 reveal steps that tell a story. Each step sho
 
 ## Step 3 — Generate the flow data file
 
-Create `src/flows/<flow-id>.jsx` following this exact pattern:
+Create `src/flows/<project-id>/<flow-id>.jsx` following this exact pattern:
 
 ```jsx
 /**
@@ -136,28 +136,58 @@ Edge `revealAt` should match the target node's `revealAt`.
 
 ## Step 4 — Register the flow
 
-Edit `src/flows/index.js` (this file lives in the private submodule repo):
+### If adding to an existing project
 
-1. Add an import at the top:
+Edit `src/flows/<project-id>/index.js`:
+
+1. Add an import:
    ```js
    import * as myFlowId from './<flow-id>'
    ```
 
-2. Add an entry to `flowRegistry`:
+2. Add to `flowRegistry`:
    ```js
    '<flow-id>': myFlowId,
    ```
 
-3. Add the flow to the appropriate project in the `PROJECTS` array. If the project is new, append a new project object:
+3. Add to `project.flows`:
    ```js
-   {
+   { id: '<flow-id>', label: '<Flow Label>', description: '<Flow description>' },
+   ```
+
+### If creating a new project
+
+1. Create `src/flows/<project-id>/index.js`:
+   ```js
+   import * as myFlowId from './<flow-id>'
+
+   export const flowRegistry = {
+     '<flow-id>': myFlowId,
+   }
+
+   export const project = {
      id: '<project-id>',
      label: '<Project Label>',
      description: '<Project description>',
      flows: [
        { id: '<flow-id>', label: '<Flow Label>', description: '<Flow description>' },
      ],
-   },
+   }
+   ```
+
+2. Register in top-level `src/flows/index.js`:
+   ```js
+   import * as myProject from './<project-id>'
+
+   export const flowRegistry = {
+     ...existingProject.flowRegistry,
+     ...myProject.flowRegistry,
+   }
+
+   export const PROJECTS = [
+     existingProject.project,
+     myProject.project,
+   ]
    ```
 
 ## Step 5 — Verify
@@ -188,10 +218,11 @@ git add src/flows && git commit -m "Update flows submodule"
 
 ## Reference — existing files
 
-- Flow data files: `src/flows/*.jsx` (private submodule)
-- Flow index: `src/flows/index.js` (exports flowRegistry + PROJECTS)
+- Flow data files: `src/flows/<project>/*.jsx` (private submodule)
+- Project index: `src/flows/<project>/index.js` (exports flowRegistry + project metadata)
+- Top-level index: `src/flows/index.js` (aggregates all projects)
 - Sample fallback: `src/flows-sample/` (public repo)
-- Flow engine: `src/Flow.jsx` (imports from `@flows`)
+- Flow engine: `src/Flow.jsx` (imports flowRegistry from `@flows`)
 - App shell: `src/App.jsx` (imports PROJECTS from `@flows`)
 - Vite alias: `vite.config.js` (`@flows` resolution)
 - Node components: `src/nodes/*.jsx`

@@ -1,22 +1,29 @@
 # react-flow-stepper
 
-Step-by-step interactive flowchart built with [React Flow](https://reactflow.dev). Nodes and edges are revealed progressively as the user clicks through steps. Nodes are draggable, edges are reconnectable, and all modifications persist across step navigation until reset.
+Interactive step-by-step architecture diagrams using [React Flow](https://reactflow.dev/) with progressive reveal. Turn architecture diagrams and design docs into navigable flowcharts where each step reveals the next piece of the system.
 
-## Demo
-
-The included example visualizes "How Ralph Works with Amp" — an autonomous AI agent loop for completing PRDs.
-
-## Getting started
+## Quick start
 
 ```bash
 npm install
 npm run dev
 ```
 
-Opens at http://localhost:5173
+Opens at `http://localhost:5173/` with a sample demo flow.
+
+### Private flows
+
+Flow data can be stored in a private git submodule. If you have access:
+
+```bash
+git submodule update --init src/flows
+```
+
+Without the submodule, the app falls back to a built-in sample flow.
 
 ## Features
 
+- **Multi-project support** — organize flows into projects, navigate projects > flows > stepper
 - **Step-by-step reveal** — nodes and edges appear one step at a time via Previous/Next controls
 - **Draggable nodes** — reposition any box; positions persist across step changes
 - **Reconnectable edges** — drag edge endpoints to different handles
@@ -24,7 +31,7 @@ Opens at http://localhost:5173
 - **Reset** — restores all positions, edges, and connections to initial state
 - **Animated edges** — dashed lines with directional arrows
 - **Edge labels** — text centered on edges (used for decision branches)
-- **5 node types** — step, decision, done, code snippet, annotation
+- **Public/private split** — framework is open source, flow data can be private
 
 ## Node types
 
@@ -36,19 +43,39 @@ Opens at http://localhost:5173
 | `codeSnippet` | Reference code | Purple dashed border, monospace font, no handles |
 | `annotation` | Title or note | Title: large centered text. Note: pink dashed border |
 
+## Adding flows
+
+Use the `/flow-stepper` skill in Claude Code, or manually:
+
+1. Create a `.jsx` file exporting `TOTAL_STEPS`, `allNodes`, `allEdges`
+2. Register in the project's `index.js`
+3. `npm run build` to verify
+
+See `CLAUDE.md` for the full node, edge, and handle reference.
+
+## Architecture
+
+```
+src/
+  App.jsx            — Project/flow picker, navigation
+  Flow.jsx           — Flow engine: step logic, persistence
+  flows/             — Git submodule (private flow data)
+  flows-sample/      — Public fallback (demo flow)
+  nodes/             — React Flow node components
+vite.config.js       — @flows alias (private or sample)
+```
+
+## Commands
+
+```bash
+npm run dev      # Start dev server
+npm run build    # Production build
+npm run preview  # Preview production build
+```
+
 ## Origin
 
-The example flow reproduces the "How Ralph Works with Amp" workflow presented by [Ryan Carson](https://x.com/ryancarson) on [Greg Isenberg's](https://x.com/gregisenberg) podcast: ["Ralph Wiggum" AI Agent will 10x Claude Code/Amp](https://www.youtube.com/watch?v=RpvQH0r0ecM). Ralph is an autonomous AI agent loop that picks user stories from a PRD, implements them, runs tests, commits changes, and loops until all stories pass.
-
-Screenshots from the video were provided to [Claude Code](https://claude.ai/code), which reproduced the workflow as an interactive React Flow diagram — extracting the node layout, connections, visual styles, and step-by-step reveal behavior entirely from the images.
-
-## How it was built
-
-1. Screenshots of the Ralph workflow from the podcast were provided as input to Claude Code
-2. Claude Code extracted the node types, layout, edge connections, and visual styles from the images
-3. The step-by-step reveal system was built based on the navigation UI visible in the screenshots (Previous / Step N of 10 / Next / Reset)
-4. Interactive features (drag nodes, reconnect edges, create new connections, persist modifications) were layered on iteratively through conversation
-5. The entire project — scaffolding, components, styles, and documentation — was generated in a single Claude Code session
+The original example flow reproduces the "How Ralph Works with Amp" workflow presented by [Ryan Carson](https://x.com/ryancarson) on [Greg Isenberg's](https://x.com/gregisenberg) podcast: ["Ralph Wiggum" AI Agent will 10x Claude Code/Amp](https://www.youtube.com/watch?v=RpvQH0r0ecM). Screenshots from the video were provided to [Claude Code](https://claude.ai/code), which reproduced the workflow as an interactive React Flow diagram entirely from the images.
 
 ## License
 
